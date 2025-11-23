@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  width: 100%;
+  min-height: 100%; /* Important : min-height au lieu de height fixe */
+  margin: 0;
+  padding: 0;
+  background-color: #050505;
+  overflow-x: hidden; /* Empêche le scroll horizontal seulement */
+  overflow-y: auto;   /* Autorise le scroll vertical */
+}
+
+/* Personnalisation de la barre de scroll pour le style Cyberpunk */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00F3FF; /* Cyber Blue au survol */
+}
