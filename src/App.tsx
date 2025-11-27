@@ -8,6 +8,7 @@ import { TAROT_DECK, type Arcana } from './data/arcanaData';
 import CardRenderer from './components/CardRenderer';
 import SystemLog from './components/SystemLog';
 import ContactModule from './components/ContactModule';
+import { Analytics } from "@vercel/analytics/react";
 
 type SystemState = 'IDLE' | 'FOCUS_PHASE' | 'SHUFFLING' | 'REVEALED';
 type DrawMode = 'SINGLE' | 'TRIPLE';
@@ -296,6 +297,7 @@ export default function App() {
                   [ SECURE_CONNECTION_ESTABLISHED ]
               </p>
           </div>
+          <Analytics />
       </footer>
     </div>
   );
