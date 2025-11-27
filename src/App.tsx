@@ -275,24 +275,33 @@ export default function App() {
         </div>
       </main>
 
-      <section className="relative z-10 container mx-auto px-6 py-12 text-center md:text-left border-t border-white/5">
-        <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-cyber-blue tracking-tight">
-                Qui est Ghislaine Evangelisti, votre Médium ?
-            </h2>
-            <p className="text-gray-400 leading-relaxed text-sm">
-                Bienvenue sur le <strong>Tarot de Gigi 2099</strong>, une expérience de divination unique alliant la sagesse ancestrale du <strong>Tarot de Marseille</strong> à la technologie futuriste.
-                Derrière cet oracle numérique se trouve l'expertise de <strong>Ghislaine Evangelisti</strong>, médium reconnue pour sa précision et sa bienveillance.
-            </p>
-            <p className="text-gray-400 leading-relaxed text-sm">
-                Que vous cherchiez des réponses dans le domaine sentimental (Amour), professionnel (Travail) ou spirituel, ce tirage interactif vous offre une première guidance.
-                Pour une consultation approfondie et personnalisée, n'hésitez pas à contacter Ghislaine directement via le module de contact ci-dessus (Téléphone ou Facebook).
-            </p>
-            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-mono text-gray-600 pt-4">
-                <span>#VoyanceGratuite</span>
-                <span>#TarotEnLigne</span>
-                <span>#MediumFrance</span>
-                <span>#AvenirAmoureux</span>
+      <section className="relative z-10 container mx-auto px-4 py-8 mt-12 opacity-60 hover:opacity-100 transition-opacity duration-500">
+        <div className="max-w-3xl mx-auto bg-black/40 border border-white/5 p-6 rounded-lg backdrop-blur-sm">
+            
+            <div className="flex items-center gap-2 mb-4 text-cyber-blue/50">
+                <Terminal className="w-4 h-4" />
+                <h2 className="text-xs font-bold uppercase tracking-[0.2em]">
+                    System Database // Ghislaine_Oracle.dat
+                </h2>
+            </div>
+
+            <div className="space-y-4 font-mono text-[10px] md:text-xs text-gray-500 leading-relaxed text-justify">
+                <p>
+                    <span className="text-cyber-orange/80"> ACCESSING CORE DATA :</span> Bienvenue sur le <strong>Tarot de Gigi 2099</strong>. 
+                    Cette interface de divination expérimentale fusionne l'algorithme du <strong>Tarot de Marseille</strong> avec l'expertise humaine de 
+                    <strong> Ghislaine Evangelisti</strong>, médium reconnue pour sa précision.
+                </p>
+                <p>
+                    Ce système offre une guidance immédiate pour les requêtes de type <span className="text-gray-400">AMOUR</span>, <span className="text-gray-400">TRAVAIL</span> et <span className="text-gray-400">SPIRITUALITÉ</span>. 
+                    Pour une analyse quantique approfondie et une connexion directe, l'établissement d'un lien vocal ou textuel avec Ghislaine est recommandé via les protocoles de communication ci-dessus.
+                </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5 text-[9px] font-mono text-gray-700">
+                <span className="bg-white/5 px-2 py-1 rounded">#VoyanceGratuite</span>
+                <span className="bg-white/5 px-2 py-1 rounded">#TarotEnLigne</span>
+                <span className="bg-white/5 px-2 py-1 rounded">#MediumFrance</span>
+                <span className="bg-white/5 px-2 py-1 rounded">#Avenir2025</span>
             </div>
         </div>
       </section>
