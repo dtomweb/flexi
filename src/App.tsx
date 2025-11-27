@@ -275,6 +275,28 @@ export default function App() {
         </div>
       </main>
 
+      <section className="relative z-10 container mx-auto px-6 py-12 text-center md:text-left border-t border-white/5">
+        <div className="max-w-4xl mx-auto space-y-6">
+            <h2 className="text-2xl font-bold text-cyber-blue tracking-tight">
+                Qui est Ghislaine Evangelisti, votre Médium ?
+            </h2>
+            <p className="text-gray-400 leading-relaxed text-sm">
+                Bienvenue sur le <strong>Tarot de Gigi 2099</strong>, une expérience de divination unique alliant la sagesse ancestrale du <strong>Tarot de Marseille</strong> à la technologie futuriste.
+                Derrière cet oracle numérique se trouve l'expertise de <strong>Ghislaine Evangelisti</strong>, médium reconnue pour sa précision et sa bienveillance.
+            </p>
+            <p className="text-gray-400 leading-relaxed text-sm">
+                Que vous cherchiez des réponses dans le domaine sentimental (Amour), professionnel (Travail) ou spirituel, ce tirage interactif vous offre une première guidance.
+                Pour une consultation approfondie et personnalisée, n'hésitez pas à contacter Ghislaine directement via le module de contact ci-dessus (Téléphone ou Facebook).
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-mono text-gray-600 pt-4">
+                <span>#VoyanceGratuite</span>
+                <span>#TarotEnLigne</span>
+                <span>#MediumFrance</span>
+                <span>#AvenirAmoureux</span>
+            </div>
+        </div>
+      </section>
+
       <footer className="relative z-10 w-full py-6 border-t border-white/5 bg-black/50 backdrop-blur-sm mt-8">
           <div className="container mx-auto flex flex-col items-center justify-center gap-2">
               <div className="flex items-center gap-2 text-[10px] font-mono text-gray-600 uppercase tracking-widest">

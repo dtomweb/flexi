@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.tarot2099.fr/sitemap.xml
