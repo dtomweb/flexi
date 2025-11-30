@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Cpu, Zap, ShieldAlert, Scan, RefreshCcw, Binary, Activity, 
   Layers, Grid, Volume2, VolumeX, Fingerprint, Eye, Bot, Sparkles,
-  Terminal, ExternalLink 
+  Terminal, ExternalLink, Share2, MessageCircle, Facebook, Play, Square 
 } from 'lucide-react';
 import { TAROT_DECK, type Arcana } from './data/arcanaData';
 import CardRenderer from './components/CardRenderer';
@@ -25,12 +25,15 @@ export default function App() {
   const [drawMode, setDrawMode] = useState<DrawMode>('SINGLE');
   const [drawnCards, setDrawnCards] = useState<Arcana[]>([]);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number>(0);
+  
+  // IA & VOCAL
   const [aiInterpretation, setAiInterpretation] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+
   const [latency, setLatency] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
   
-  // LOGS CORRIGÉS
   const [logs, setLogs] = useState<string[]>([
     "System initialized.",
     "Neo-Arcana Protocol v.2099 loaded.",
@@ -38,7 +41,16 @@ export default function App() {
   ]);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const topOfGameRef = useRef<HTMLDivElement>(null);
 
+  // --- GESTION DU SCROLL ---
+  const scrollToGame = () => {
+    if (topOfGameRef.current) {
+      topOfGameRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // --- GESTION AUDIO AMBIANCE ---
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = 0.05;
   }, [soundEnabled]);
@@ -50,6 +62,43 @@ export default function App() {
     audio.play().catch(() => {});
   };
 
+  // --- GESTION DE LA VOIX ROBOTIQUE ---
+  const speakText = (text: string) => {
+    if (!window.speechSynthesis) return;
+    
+    // Arrêter si déjà en train de parler
+    window.speechSynthesis.cancel();
+
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    utterance.pitch = 0.8; // Un peu plus grave (effet robot)
+    utterance.rate = 1.1;  // Un peu plus rapide
+    
+    // Essayer de trouver une voix spécifique si disponible
+    const voices = window.speechSynthesis.getVoices();
+    const roboticVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Thomas")); 
+    if (roboticVoice) utterance.voice = roboticVoice;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Arrêter la voix si on change de carte ou si on quitte
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, [selectedCardIndex, systemState]);
+
+
+  // --- PING ---
   useEffect(() => {
     const checkLatency = async () => {
       const start = performance.now();
@@ -66,6 +115,21 @@ export default function App() {
     setLogs(prev => [...prev, `[${time}] ${msg}`]);
   };
 
+  // --- PARTAGE RESEAUX SOCIAUX ---
+  const shareResult = (platform: 'WHATSAPP' | 'FACEBOOK') => {
+    if (!currentAnalysisCard) return;
+    
+    const url = window.location.href;
+    const text = `🔮 *TAROT DE GIGI 2099* 🔮\n\nJ'ai tiré la carte : *${currentAnalysisCard.neoName}*\n\n"${currentAnalysisCard.interpretation.general}"\n\n👉 Fais ton tirage ici : ${url}`;
+
+    if (platform === 'WHATSAPP') {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    } else {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    }
+  };
+
+  // --- APPEL API GEMINI ---
   const callGeminiOracle = async (cards: Arcana[], mode: DrawMode) => {
     setIsThinking(true);
     setAiInterpretation(""); 
@@ -95,18 +159,21 @@ export default function App() {
     }
   };
 
+  // --- LOGIQUE JEU ---
   const startRitual = () => {
     playSfx('CLICK');
     setSystemState('FOCUS_PHASE');
     setDrawnCards([]);
     setAiInterpretation("");
     addLog(`Mode selected: ${drawMode === 'SINGLE' ? 'SINGLE_THREAD' : 'TRIPLE_CORE_PROCESS'}`);
+    scrollToGame();
   };
 
   const confirmFocus = () => {
     playSfx('CLICK');
     setSystemState('SHUFFLING');
     addLog("Shuffling Quantum Data Shards...");
+    scrollToGame();
     setTimeout(() => performDraw(), 3000);
   };
 
@@ -114,16 +181,20 @@ export default function App() {
     playSfx('REVEAL');
     const count = drawMode === 'SINGLE' ? 1 : 3;
     const newCards: Arcana[] = [];
+    
     const deckCopy = [...TAROT_DECK];
     for (let i = 0; i < count; i++) {
         const randomIndex = Math.floor(Math.random() * deckCopy.length);
         newCards.push(deckCopy[randomIndex]);
         deckCopy.splice(randomIndex, 1);
     }
+
     setDrawnCards(newCards);
     setSelectedCardIndex(0);
     addLog(`Process complete. ${count} shards decrypted.`);
+    
     setSystemState('REVEALED');
+    scrollToGame();
     callGeminiOracle(newCards, drawMode);
   };
 
@@ -170,6 +241,8 @@ export default function App() {
         </div>
       </header>
 
+      <div ref={topOfGameRef} className="absolute top-20 left-0 w-full h-1 pointer-events-none"></div>
+
       <main className="relative z-10 container mx-auto pt-24 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start flex-grow">
         
         <div className="order-1 lg:order-none lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-28">
@@ -189,7 +262,6 @@ export default function App() {
                 </div>
             </button>
 
-            {/* MESSAGE VISUALISEZ VOTRE QUESTION */}
             {systemState === 'FOCUS_PHASE' && (
                 <div className="bg-green-900/20 border border-green-500/30 p-3 rounded text-center animate-pulse">
                     <p className="text-[10px] font-mono text-green-400 uppercase font-bold">
@@ -202,10 +274,8 @@ export default function App() {
         </div>
 
         <div className="order-2 lg:order-none lg:col-span-5 flex flex-col items-center justify-start min-h-[500px]">
-            
-            {/* CONTAINER CORRIGÉ POUR LE SCROLL */}
             <div className={`w-full flex ${drawMode === 'TRIPLE' 
-                ? 'flex-row gap-3 overflow-x-auto pb-6 justify-start px-2 snap-x snap-mandatory' // Force start + snap
+                ? 'flex-row gap-3 overflow-x-auto pb-6 justify-start px-2 snap-x snap-mandatory' 
                 : 'justify-center'}`}>
                 
                 {drawnCards.length === 0 ? (
@@ -233,16 +303,33 @@ export default function App() {
                 <div className="bg-cyber-gray/10 backdrop-blur-md border-l-2 border-cyber-blue p-6 space-y-6 animate-[fadeIn_0.3s_ease-out]">
                     <div className="flex items-center justify-between text-cyber-blue border-b border-cyber-blue/20 pb-2">
                         <div className="flex items-center gap-2"><Scan className="w-5 h-5" /><h3 className="font-sans text-lg font-bold tracking-wider">ANALYSE</h3></div>
-                        <span className="text-[10px] font-mono bg-cyber-blue/10 px-2 py-1 rounded">{currentAnalysisCard.neoName}</span>
+                        <div className="flex gap-2">
+                            {/* BOUTONS PARTAGE */}
+                            <button onClick={() => shareResult('WHATSAPP')} className="p-1 hover:text-green-400 transition-colors"><MessageCircle className="w-4 h-4" /></button>
+                            <button onClick={() => shareResult('FACEBOOK')} className="p-1 hover:text-blue-500 transition-colors"><Facebook className="w-4 h-4" /></button>
+                        </div>
                     </div>
                     
                     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cyber-blue/20">
                         <div className="bg-gradient-to-r from-cyber-blue/10 to-transparent border border-cyber-blue/30 p-4 rounded relative overflow-hidden">
-                            <div className="flex items-center gap-2 mb-3 text-cyber-blue">
-                                {isThinking ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-                                <span className="font-bold text-xs font-mono uppercase tracking-widest">
-                                    {isThinking ? 'NEURAL CORE PROCESSING...' : 'ORACLE AI INTERPRETATION'}
-                                </span>
+                            <div className="flex items-center justify-between gap-2 mb-3 text-cyber-blue">
+                                <div className="flex items-center gap-2">
+                                    {isThinking ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                                    <span className="font-bold text-xs font-mono uppercase tracking-widest">
+                                        {isThinking ? 'NEURAL PROCESSING...' : 'ORACLE AI'}
+                                    </span>
+                                </div>
+                                {/* BOUTON VOIX */}
+                                {aiInterpretation && !isThinking && (
+                                    <button 
+                                        onClick={() => speakText(aiInterpretation)}
+                                        className={`flex items-center gap-1 text-[9px] px-2 py-1 border rounded uppercase tracking-wider transition-all
+                                            ${isSpeaking ? 'bg-cyber-orange text-black border-cyber-orange animate-pulse' : 'border-cyber-blue/50 hover:bg-cyber-blue/20'}`}
+                                    >
+                                        {isSpeaking ? <Square className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+                                        {isSpeaking ? 'STOP' : 'VOCAL'}
+                                    </button>
+                                )}
                             </div>
                             {isThinking ? (
                                 <div className="space-y-2 animate-pulse">
@@ -275,16 +362,15 @@ export default function App() {
         </div>
       </main>
 
+      {/* SECTION SEO & FOOTER RESTENT INCHANGÉS... */}
       <section className="relative z-10 container mx-auto px-4 py-8 mt-12 opacity-60 hover:opacity-100 transition-opacity duration-500">
         <div className="max-w-3xl mx-auto bg-black/40 border border-white/5 p-6 rounded-lg backdrop-blur-sm">
-            
             <div className="flex items-center gap-2 mb-4 text-cyber-blue/50">
                 <Terminal className="w-4 h-4" />
                 <h2 className="text-xs font-bold uppercase tracking-[0.2em]">
                     System Database // Ghislaine_Oracle.dat
                 </h2>
             </div>
-
             <div className="space-y-4 font-mono text-[10px] md:text-xs text-gray-500 leading-relaxed text-justify">
                 <p>
                     <span className="text-cyber-orange/80"> ACCESSING CORE DATA :</span> Bienvenue sur le <strong>Tarot de Gigi 2099</strong>. 
@@ -296,7 +382,6 @@ export default function App() {
                     Pour une analyse quantique approfondie et une connexion directe, l'établissement d'un lien vocal ou textuel avec Ghislaine est recommandé via les protocoles de communication ci-dessus.
                 </p>
             </div>
-
             <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5 text-[9px] font-mono text-gray-700">
                 <span className="bg-white/5 px-2 py-1 rounded">#VoyanceGratuite</span>
                 <span className="bg-white/5 px-2 py-1 rounded">#TarotEnLigne</span>
@@ -312,7 +397,6 @@ export default function App() {
                   <Terminal className="w-3 h-3" />
                   <span>System Architect</span>
               </div>
-              
               <a 
                 href="https://dtomweb.fr" 
                 target="_blank" 
