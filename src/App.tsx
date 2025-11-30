@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Cpu, Zap, ShieldAlert, Scan, RefreshCcw, Binary, Activity, 
   Layers, Grid, Volume2, VolumeX, Fingerprint, Eye, Bot, Sparkles,
-  Terminal, ExternalLink, Share2, MessageCircle, Facebook, Play, Square 
+  Terminal, ExternalLink, MessageCircle, Facebook, Play, Square 
 } from 'lucide-react';
 import { TAROT_DECK, type Arcana } from './data/arcanaData';
 import CardRenderer from './components/CardRenderer';
@@ -41,16 +41,47 @@ export default function App() {
   ]);
   
   const audioRef = useRef<HTMLAudioElement>(null);
-  const topOfGameRef = useRef<HTMLDivElement>(null);
+  
+  // Références pour le scroll
+  const cardsSectionRef = useRef<HTMLDivElement>(null);
+  const analysisSectionRef = useRef<HTMLDivElement>(null);
 
-  // --- GESTION DU SCROLL ---
-  const scrollToGame = () => {
-    if (topOfGameRef.current) {
-      topOfGameRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // --- CORRECTION DU SCROLL AU CHARGEMENT ---
+  useEffect(() => {
+    // Force le navigateur à oublier la position précédente
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    // Remonte tout en haut instantanément
+    window.scrollTo(0, 0);
+    
+    // Une deuxième fois après un petit délai pour être sûr que le rendu est fini
+    setTimeout(() => window.scrollTo(0, 0), 100);
+  }, []);
+
+  // --- FONCTIONS DE SCROLL INTELLIGENTES ---
+  
+  // Appelé pour recentrer le jeu
+  const scrollToGameFocus = () => {
+    // Sur Mobile (< 1024px) : On scrolle vers les cartes
+    if (window.innerWidth < 1024 && cardsSectionRef.current) {
+        cardsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        // Sur PC (>= 1024px) : On remonte tout en haut pour avoir une vue d'ensemble propre
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  // --- GESTION AUDIO AMBIANCE ---
+  // Appelé quand l'analyse arrive
+  const scrollToAnalysis = () => {
+    // UNIQUEMENT SUR MOBILE. Sur PC, l'analyse est à droite, pas besoin de scroller.
+    if (window.innerWidth < 1024 && analysisSectionRef.current) {
+      setTimeout(() => {
+        analysisSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
+
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = 0.05;
   }, [soundEnabled]);
@@ -62,43 +93,27 @@ export default function App() {
     audio.play().catch(() => {});
   };
 
-  // --- GESTION DE LA VOIX ROBOTIQUE ---
   const speakText = (text: string) => {
     if (!window.speechSynthesis) return;
-    
-    // Arrêter si déjà en train de parler
     window.speechSynthesis.cancel();
-
-    if (isSpeaking) {
-      setIsSpeaking(false);
-      return;
-    }
+    if (isSpeaking) { setIsSpeaking(false); return; }
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'fr-FR';
-    utterance.pitch = 0.8; // Un peu plus grave (effet robot)
-    utterance.rate = 1.1;  // Un peu plus rapide
+    utterance.pitch = 0.8; 
+    utterance.rate = 1.1;  
     
-    // Essayer de trouver une voix spécifique si disponible
     const voices = window.speechSynthesis.getVoices();
     const roboticVoice = voices.find(v => v.name.includes("Google") || v.name.includes("Thomas")); 
     if (roboticVoice) utterance.voice = roboticVoice;
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-
     window.speechSynthesis.speak(utterance);
   };
 
-  // Arrêter la voix si on change de carte ou si on quitte
-  useEffect(() => {
-    return () => {
-      window.speechSynthesis.cancel();
-    };
-  }, [selectedCardIndex, systemState]);
+  useEffect(() => { return () => { window.speechSynthesis.cancel(); }; }, [selectedCardIndex, systemState]);
 
-
-  // --- PING ---
   useEffect(() => {
     const checkLatency = async () => {
       const start = performance.now();
@@ -115,21 +130,14 @@ export default function App() {
     setLogs(prev => [...prev, `[${time}] ${msg}`]);
   };
 
-  // --- PARTAGE RESEAUX SOCIAUX ---
   const shareResult = (platform: 'WHATSAPP' | 'FACEBOOK') => {
     if (!currentAnalysisCard) return;
-    
     const url = window.location.href;
     const text = `🔮 *TAROT DE GIGI 2099* 🔮\n\nJ'ai tiré la carte : *${currentAnalysisCard.neoName}*\n\n"${currentAnalysisCard.interpretation.general}"\n\n👉 Fais ton tirage ici : ${url}`;
-
-    if (platform === 'WHATSAPP') {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    } else {
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-    }
+    if (platform === 'WHATSAPP') window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    else window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
   };
 
-  // --- APPEL API GEMINI ---
   const callGeminiOracle = async (cards: Arcana[], mode: DrawMode) => {
     setIsThinking(true);
     setAiInterpretation(""); 
@@ -141,13 +149,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cards, mode })
       });
-
       if (!response.ok) throw new Error("Neural Link Failed");
-
       const data = await response.json();
       setAiInterpretation(data.text);
       addLog("Neural interpretation received.");
       playSfx('REVEAL'); 
+      
+      // Scroll vers l'analyse (Mobile seulement)
+      scrollToAnalysis();
 
     } catch (error) {
       console.error(error);
@@ -159,21 +168,24 @@ export default function App() {
     }
   };
 
-  // --- LOGIQUE JEU ---
   const startRitual = () => {
     playSfx('CLICK');
     setSystemState('FOCUS_PHASE');
     setDrawnCards([]);
     setAiInterpretation("");
     addLog(`Mode selected: ${drawMode === 'SINGLE' ? 'SINGLE_THREAD' : 'TRIPLE_CORE_PROCESS'}`);
-    scrollToGame();
+    
+    // Sur PC, on remonte en haut pour être propre. Sur Mobile, on cadre.
+    scrollToGameFocus();
   };
 
   const confirmFocus = () => {
     playSfx('CLICK');
     setSystemState('SHUFFLING');
     addLog("Shuffling Quantum Data Shards...");
-    scrollToGame();
+    
+    scrollToGameFocus();
+
     setTimeout(() => performDraw(), 3000);
   };
 
@@ -181,20 +193,20 @@ export default function App() {
     playSfx('REVEAL');
     const count = drawMode === 'SINGLE' ? 1 : 3;
     const newCards: Arcana[] = [];
-    
     const deckCopy = [...TAROT_DECK];
     for (let i = 0; i < count; i++) {
         const randomIndex = Math.floor(Math.random() * deckCopy.length);
         newCards.push(deckCopy[randomIndex]);
         deckCopy.splice(randomIndex, 1);
     }
-
     setDrawnCards(newCards);
     setSelectedCardIndex(0);
     addLog(`Process complete. ${count} shards decrypted.`);
     
     setSystemState('REVEALED');
-    scrollToGame();
+    
+    scrollToGameFocus();
+    
     callGeminiOracle(newCards, drawMode);
   };
 
@@ -241,10 +253,10 @@ export default function App() {
         </div>
       </header>
 
-      <div ref={topOfGameRef} className="absolute top-20 left-0 w-full h-1 pointer-events-none"></div>
-
-      <main className="relative z-10 container mx-auto pt-24 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start flex-grow">
+      {/* Main Content */}
+      <main className="relative z-10 container mx-auto pt-28 px-4 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start flex-grow min-h-[80vh]">
         
+        {/* COLONNE GAUCHE (Contrôles) */}
         <div className="order-1 lg:order-none lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-28">
             <div className="flex gap-2 p-1 bg-gray-900/50 rounded border border-gray-800">
                 <button onClick={() => { playSfx('HOVER'); setDrawMode('SINGLE'); }} disabled={systemState === 'SHUFFLING'} className={`flex-1 py-2 text-xs font-mono flex items-center justify-center gap-2 rounded transition-all ${drawMode === 'SINGLE' ? 'bg-cyber-blue text-black font-bold' : 'text-gray-500 hover:bg-white/5'}`}>
@@ -273,7 +285,8 @@ export default function App() {
             <SystemLog logs={logs} />
         </div>
 
-        <div className="order-2 lg:order-none lg:col-span-5 flex flex-col items-center justify-start min-h-[500px]">
+        {/* COLONNE CENTRE (Cartes) - Ref ajouté ici */}
+        <div ref={cardsSectionRef} className="order-2 lg:order-none lg:col-span-5 flex flex-col items-center justify-start min-h-[500px] scroll-mt-28">
             <div className={`w-full flex ${drawMode === 'TRIPLE' 
                 ? 'flex-row gap-3 overflow-x-auto pb-6 justify-start px-2 snap-x snap-mandatory' 
                 : 'justify-center'}`}>
@@ -298,13 +311,13 @@ export default function App() {
             <ContactModule />
         </div>
 
-        <div className="order-3 lg:order-none lg:col-span-4 flex flex-col justify-start pb-8">
+        {/* COLONNE DROITE (Analyse) - Ref ajoutée ici */}
+        <div ref={analysisSectionRef} className="order-3 lg:order-none lg:col-span-4 flex flex-col justify-start pb-8 scroll-mt-28">
             {currentAnalysisCard ? (
                 <div className="bg-cyber-gray/10 backdrop-blur-md border-l-2 border-cyber-blue p-6 space-y-6 animate-[fadeIn_0.3s_ease-out]">
                     <div className="flex items-center justify-between text-cyber-blue border-b border-cyber-blue/20 pb-2">
                         <div className="flex items-center gap-2"><Scan className="w-5 h-5" /><h3 className="font-sans text-lg font-bold tracking-wider">ANALYSE</h3></div>
                         <div className="flex gap-2">
-                            {/* BOUTONS PARTAGE */}
                             <button onClick={() => shareResult('WHATSAPP')} className="p-1 hover:text-green-400 transition-colors"><MessageCircle className="w-4 h-4" /></button>
                             <button onClick={() => shareResult('FACEBOOK')} className="p-1 hover:text-blue-500 transition-colors"><Facebook className="w-4 h-4" /></button>
                         </div>
@@ -319,7 +332,6 @@ export default function App() {
                                         {isThinking ? 'NEURAL PROCESSING...' : 'ORACLE AI'}
                                     </span>
                                 </div>
-                                {/* BOUTON VOIX */}
                                 {aiInterpretation && !isThinking && (
                                     <button 
                                         onClick={() => speakText(aiInterpretation)}
@@ -362,7 +374,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* SECTION SEO & FOOTER RESTENT INCHANGÉS... */}
+      {/* SECTION SEO */}
       <section className="relative z-10 container mx-auto px-4 py-8 mt-12 opacity-60 hover:opacity-100 transition-opacity duration-500">
         <div className="max-w-3xl mx-auto bg-black/40 border border-white/5 p-6 rounded-lg backdrop-blur-sm">
             <div className="flex items-center gap-2 mb-4 text-cyber-blue/50">
@@ -397,6 +409,7 @@ export default function App() {
                   <Terminal className="w-3 h-3" />
                   <span>System Architect</span>
               </div>
+              
               <a 
                 href="https://dtomweb.fr" 
                 target="_blank" 
